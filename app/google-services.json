@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "655129263025",
+    "project_id": "testcrashlitics-f5e24",
+    "storage_bucket": "testcrashlitics-f5e24.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655129263025:android:52f80dc50e05b7e4db1b90",
+        "android_client_info": {
+          "package_name": "com.ijk.testcrashlytics"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARSAioeWWCUHCwZdsNCtRk8H7jMTfrvmM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
