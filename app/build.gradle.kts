@@ -7,7 +7,6 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.UUID
 
@@ -125,14 +124,14 @@ tasks.register<Exec>("runTerminalCommand") {
 tasks.register<Exec>("sendFile") {
 //    dependsOn("assembleDebug")
 
-//    val output = ByteArrayOutputStream()
-//    commandLine("git", "log", "-5", "--pretty=format:%h - %s")
-    commandLine("bash", "-c", "git -status")
-//    standardOutput = output
+    val output = ByteArrayOutputStream()
+    commandLine("git", "log", "-10", "--pretty=format:%h - %s")
+    standardOutput = output
 
     doLast {
-//        val filePath = Paths.get(buildDir.toString(), "outputs/apk/debug/app-debug.apk")
-        val filePath = Paths.get(buildDir.toString(), "outputs/apk/debug/output-metadata.json")
+
+        val fileName = "app-debug.apk"
+        val filePath = Paths.get(buildDir.toString(), "outputs/apk/debug/$fileName")
         println("File path: $filePath")
 
         val file = File(filePath.toString())
@@ -160,7 +159,7 @@ tasks.register<Exec>("sendFile") {
 
         val outputStream = DataOutputStream(connection.outputStream)
 
-        val text = "text for analize"
+        val text = output.toString().trim()
         outputStream.apply {
             writeBytes(twoHyphens + boundary + lineEnd)
             writeBytes("Content-Disposition: form-data; name=\"body\"$lineEnd")
@@ -168,11 +167,18 @@ tasks.register<Exec>("sendFile") {
             writeBytes(text + lineEnd)
         }
 
+        outputStream.apply {
+            writeBytes(twoHyphens + boundary + lineEnd)
+            writeBytes("Content-Disposition: form-data; name=\"filename\"$lineEnd")
+            writeBytes(lineEnd)
+            writeBytes(fileName + lineEnd)
+        }
+
         // write the file
         outputStream.apply {
             writeBytes(twoHyphens + boundary + lineEnd)
             writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"${file.name}\"$lineEnd")
-            writeBytes("Content-Type: ${Files.probeContentType(file.toPath())}$lineEnd")
+            writeBytes("Content-Type: application/vnd.android.package-archive$lineEnd")
             writeBytes(lineEnd)
 
             file.inputStream().use { it.copyTo(this) }
