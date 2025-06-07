@@ -1,8 +1,3 @@
-//import okhttp3.MediaType.Companion.toMediaTypeOrNull
-//import okhttp3.MultipartBody
-//import okhttp3.OkHttpClient
-//import okhttp3.Request
-//import okhttp3.RequestBody
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
@@ -10,6 +5,7 @@ import java.net.URL
 import java.nio.file.Paths
 import java.util.UUID
 
+val versionCode = 3
 
 plugins {
     alias(libs.plugins.android.application)
@@ -27,7 +23,7 @@ android {
         applicationId = "com.ijk.testcrashlytics"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = versionCode
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -70,7 +66,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // MARK: Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
@@ -84,54 +80,18 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
-tasks.register("AssembleDebug") {
-    group = "build"
-    description = "\uD83D\uDCDD Runs assembleDebug build variant"
-//    dependsOn("assembleDebug")
-    dependsOn("assembleDebug")
-
-    doLast {
-
-        val apkDir = File(layout.buildDirectory.get().asFile, "outputs/apk/debug")
-        val apkFiles = apkDir.listFiles { _, name -> name.endsWith(".apk") } ?: emptyArray()
-
-        if (apkFiles.isNotEmpty()) {
-            println("✅ Signed APK(s) generated:")
-            apkFiles.forEach {
-                println("📦 ${it.absolutePath}")
-            }
-
-            exec {
-                commandLine("open", "$apkDir")
-            }
-        } else {
-            println("⚠️ No APK files found in ${apkDir.absolutePath}")
-        }
-    }
-}
-
-tasks.register<Exec>("runTerminalCommand") {
-//    val output = ByteArrayOutputStream()
-//    exec {
-//        commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
-//        standardOutput = output
-//    }
-    commandLine("bash", "-c", "echo Hello from terminal")
-//    println("Current branch: ${output.toString().trim()}")
-}
-
-// MARK: sendFile
-tasks.register<Exec>("sendFile") {
-//    dependsOn("assembleDebug")
+// MARK: AssembleAndSendFile
+tasks.register<Exec>("AssembleAndSendFile") {
+    val buildVariant = "Debug"
+//    dependsOn("assemble$buildVariant")
+    val fileName = "$versionCode-testCrashlytics-${buildVariant.lowercase()}.apk"
 
     val output = ByteArrayOutputStream()
     commandLine("git", "log", "-10", "--pretty=format:%h - %s")
     standardOutput = output
 
     doLast {
-
-        val fileName = "app-debug.apk"
-        val filePath = Paths.get(buildDir.toString(), "outputs/apk/debug/$fileName")
+        val filePath = Paths.get(buildDir.toString(), "outputs/apk/${buildVariant}/app-${buildVariant.lowercase()}.apk")
         println("File path: $filePath")
 
         val file = File(filePath.toString())
