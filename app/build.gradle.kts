@@ -1,11 +1,8 @@
-import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Paths
 import java.util.UUID
-
-val versionCode = 3
 
 plugins {
     alias(libs.plugins.android.application)
@@ -23,7 +20,7 @@ android {
         applicationId = "com.ijk.testcrashlytics"
         minSdk = 26
         targetSdk = 35
-        versionCode = versionCode
+        versionCode = 5
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -81,17 +78,29 @@ dependencies {
 }
 
 // MARK: AssembleAndSendFile
-tasks.register<Exec>("AssembleAndSendFile") {
+tasks.register("AssembleAndSendFile") {
+//    val buildVariant = "Staging"
     val buildVariant = "Debug"
 //    dependsOn("assemble$buildVariant")
-    val fileName = "$versionCode-testCrashlytics-${buildVariant.lowercase()}.apk"
+    val buildDir = getLayout().buildDirectory.asFile.get().path
+    val fileName = "${android.defaultConfig.versionCode}-talkback-${buildVariant.lowercase()}.apk"
 
-    val output = ByteArrayOutputStream()
-    commandLine("git", "log", "-10", "--pretty=format:%h - %s")
-    standardOutput = output
+    var gitMessages = ""
+    doFirst {
+        val command = listOf("git", "log", "-10", "--pretty=format:%h - %s")
+        val process = ProcessBuilder(command)
+            .redirectErrorStream(true)
+            .start()
+        gitMessages = process.inputStream.bufferedReader().readText()
+        process.waitFor()
+    }
+
 
     doLast {
-        val filePath = Paths.get(buildDir.toString(), "outputs/apk/${buildVariant}/app-${buildVariant.lowercase()}.apk")
+        val filePath = Paths.get(
+            buildDir,
+            "outputs/apk/${buildVariant.lowercase()}/app-${buildVariant.lowercase()}.apk"
+        )
         println("File path: $filePath")
 
         val file = File(filePath.toString())
@@ -100,7 +109,8 @@ tasks.register<Exec>("AssembleAndSendFile") {
             return@doLast
         }
 
-        val urlString = "http://mf.bot.nu:5678/webhook-test/d72f5c25-0ae5-4d5b-b349-42a1f52f05b7"
+        val urlString = "http://mf.bot.nu:5678/webhook-test/upload-apk"
+//        val urlString = "http://mf.bot.nu:5678/webhook/upload-apk"
         val url = URL(urlString)
         val connection = url.openConnection() as HttpURLConnection
 
@@ -113,18 +123,21 @@ tasks.register<Exec>("AssembleAndSendFile") {
             doOutput = true
             useCaches = false
             requestMethod = "POST"
+            setRequestProperty(
+                "Authorization",
+                "tGEIvSRBppzTYLO3Suwrpb6D7JLudigdboeSJkJMrkIc7g2Aj05I6HkWqt2fQlF5"
+            )
             setRequestProperty("Connection", "Keep-Alive")
             setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
         }
 
         val outputStream = DataOutputStream(connection.outputStream)
 
-        val text = output.toString().trim()
         outputStream.apply {
             writeBytes(twoHyphens + boundary + lineEnd)
             writeBytes("Content-Disposition: form-data; name=\"body\"$lineEnd")
             writeBytes(lineEnd)
-            writeBytes(text + lineEnd)
+            writeBytes(gitMessages + lineEnd)
         }
 
         outputStream.apply {
